@@ -413,14 +413,18 @@ const SalaryStructures = () => {
             size="sm" 
             onClick={() => handleOpenDialog(row)}
             aria-label="Edit"
-          />
+          >
+            Edit
+          </Button>
           <Button 
             icon={<FiTrash2 />} 
             variant="danger" 
             size="sm" 
             onClick={() => handleDeleteConfirm(row)}
             aria-label="Delete"
-          />
+          >
+            Delete
+          </Button>
         </ActionButtons>
       )
     }

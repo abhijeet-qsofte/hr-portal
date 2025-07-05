@@ -528,9 +528,44 @@ const Payslips = () => {
   // Download payslip
   const handleDownloadPayslip = async (payslip) => {
     try {
-      await payslipApi.downloadPdf(payslip.id);
+      const response = await payslipApi.downloadPdf(payslip.id);
+      
+      // Create a blob from the PDF data
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Set the filename from the Content-Disposition header or use a default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `payslip_${payslip.employee_name || 'employee'}_${payslip.month}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename=([^;]+)/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/["']/g, '');
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      
+      // Append the link to the body
+      document.body.appendChild(link);
+      
+      // Click the link to trigger the download
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
     } catch (error) {
       console.error('Error downloading payslip:', error);
+      alert('Failed to download payslip. Please try again.');
     }
   };
 
@@ -595,7 +630,9 @@ const Payslips = () => {
               size="sm" 
               onClick={() => handleOpenViewDialog(row)}
               aria-label="View"
-            />
+            >
+              View
+            </Button>
             {!row.is_approved && !row.is_paid && (
               <Button 
                 icon={<FiCheck />} 
@@ -603,7 +640,9 @@ const Payslips = () => {
                 size="sm" 
                 onClick={() => handleOpenApproveDialog(row)}
                 aria-label="Approve"
-              />
+              >
+                Approve
+              </Button>
             )}
             {row.is_approved && !row.is_paid && (
               <Button 
@@ -612,7 +651,9 @@ const Payslips = () => {
                 size="sm" 
                 onClick={() => handleOpenPayDialog(row)}
                 aria-label="Mark as Paid"
-              />
+              >
+                Pay
+              </Button>
             )}
             {(row.is_approved || row.is_paid) && (
               <Button 
@@ -621,7 +662,9 @@ const Payslips = () => {
                 size="sm" 
                 onClick={() => handleDownloadPayslip(row)}
                 aria-label="Download PDF"
-              />
+              >
+                Download
+              </Button>
             )}
           </ActionButtons>
         );
@@ -905,52 +948,60 @@ const Payslips = () => {
                 <span>{formatMonth(currentPayslip.month)}</span>
               </DetailRow>
               <DetailRow>
-                <span>Basic Salary:</span>
-                <span>{formatCurrency(currentPayslip.basic_salary)}</span>
+                <span>Working Days:</span>
+                <span>{currentPayslip.working_days}</span>
               </DetailRow>
               <DetailRow>
-                <span>House Rent Allowance:</span>
-                <span>{formatCurrency(currentPayslip.house_rent_allowance)}</span>
+                <span>Days Present:</span>
+                <span>{currentPayslip.days_present}</span>
               </DetailRow>
               <DetailRow>
-                <span>Transport Allowance:</span>
-                <span>{formatCurrency(currentPayslip.transport_allowance)}</span>
+                <span>Leave Days:</span>
+                <span>{currentPayslip.leave_days}</span>
               </DetailRow>
               <DetailRow>
-                <span>Medical Allowance:</span>
-                <span>{formatCurrency(currentPayslip.medical_allowance)}</span>
+                <span>Overtime Hours:</span>
+                <span>{currentPayslip.overtime_hours}</span>
               </DetailRow>
               <DetailRow>
-                <span>Meal Allowance:</span>
-                <span>{formatCurrency(currentPayslip.meal_allowance)}</span>
+                <span>Overtime Rate:</span>
+                <span>{formatCurrency(currentPayslip.overtime_rate)}</span>
               </DetailRow>
               <DetailRow>
-                <span>Other Allowances:</span>
-                <span>{formatCurrency(currentPayslip.other_allowances)}</span>
+                <span>Overtime Amount:</span>
+                <span>{formatCurrency(currentPayslip.overtime_amount)}</span>
               </DetailRow>
               <DetailRow>
-                <span>Gross Salary:</span>
-                <span>{formatCurrency(currentPayslip.gross_salary)}</span>
+                <span>Bonus:</span>
+                <span>{formatCurrency(currentPayslip.bonus)}</span>
+              </DetailRow>
+              {currentPayslip.bonus_description && (
+                <DetailRow>
+                  <span>Bonus Description:</span>
+                  <span>{currentPayslip.bonus_description}</span>
+                </DetailRow>
+              )}
+              <DetailRow>
+                <span>Additional Deductions:</span>
+                <span>{formatCurrency(currentPayslip.additional_deductions)}</span>
+              </DetailRow>
+              {currentPayslip.deduction_description && (
+                <DetailRow>
+                  <span>Deduction Description:</span>
+                  <span>{currentPayslip.deduction_description}</span>
+                </DetailRow>
+              )}
+              <DetailRow>
+                <span>Gross Amount:</span>
+                <span>{formatCurrency(currentPayslip.gross_amount)}</span>
               </DetailRow>
               <DetailRow>
-                <span>Tax Deduction:</span>
-                <span>{formatCurrency(currentPayslip.tax_deduction)}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Provident Fund:</span>
-                <span>{formatCurrency(currentPayslip.provident_fund)}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Insurance:</span>
-                <span>{formatCurrency(currentPayslip.insurance)}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Other Deductions:</span>
-                <span>{formatCurrency(currentPayslip.other_deductions)}</span>
+                <span>Total Deductions:</span>
+                <span>{formatCurrency(currentPayslip.total_deductions)}</span>
               </DetailRow>
               <TotalRow>
-                <span>Net Salary:</span>
-                <span>{formatCurrency(currentPayslip.net_salary)}</span>
+                <span>Net Amount:</span>
+                <span>{formatCurrency(currentPayslip.net_amount)}</span>
               </TotalRow>
             </PayslipDetails>
 

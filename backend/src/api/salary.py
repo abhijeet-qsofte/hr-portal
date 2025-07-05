@@ -1,16 +1,17 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 from sqlalchemy import extract, func
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
-from src.schemas.payslip_approval import PayslipApprovalRequest
 
 from src.db.session import get_db
 from src.models.employee import Employee
 from src.models.salary import SalaryStructure, Payslip
 from src.models.payroll import Payroll
 from src.models.attendance import Attendance
+from src.schemas.payslip_approval import PayslipApprovalRequest
+from src.utils.pdf_generator import generate_payslip_pdf
 from src.schemas.salary import (
     SalaryStructure as SalaryStructureSchema,
     SalaryStructureCreate,
@@ -617,3 +618,42 @@ def generate_payslip(
             result.processor_name = processor.name
     
     return result
+
+@router.get("/payslips/{payslip_id}/pdf", response_class=Response)
+def download_payslip_pdf(payslip_id: int, db: Session = Depends(get_db)):
+    """
+    Generate and download a PDF version of the payslip
+    """
+    # Get the payslip
+    payslip = db.query(Payslip).filter(Payslip.id == payslip_id).first()
+    if not payslip:
+        raise HTTPException(status_code=404, detail="Payslip not found")
+    
+    # Get the employee
+    employee = db.query(Employee).filter(Employee.id == payslip.employee_id).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Get the approver if payslip is approved
+    approver = None
+    if payslip.is_approved and payslip.approved_by:
+        approver = db.query(Employee).filter(Employee.id == payslip.approved_by).first()
+    
+    # Get the processor if available
+    processor = None
+    if payslip.processed_by:
+        processor = db.query(Employee).filter(Employee.id == payslip.processed_by).first()
+    
+    # Generate the PDF
+    pdf_buffer = generate_payslip_pdf(payslip, employee, approver, processor)
+    
+    # Return the PDF as a downloadable file
+    filename = f"payslip_{employee.name.replace(' ', '_')}_{payslip.month}.pdf"
+    
+    return Response(
+        content=pdf_buffer.getvalue(),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
