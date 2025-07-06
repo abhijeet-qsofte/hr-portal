@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import EmployeeDetail from './pages/EmployeeDetail';
 import Attendance from './pages/Attendance';
+import EmployeeAttendance from './pages/EmployeeAttendance';
 import Payroll from './pages/Payroll';
 import SalaryStructures from './pages/SalaryStructures';
 import Payslips from './pages/Payslips';
@@ -24,6 +25,7 @@ function App() {
           <Route path="employees" element={<Employees />} />
           <Route path="employees/:id" element={<EmployeeDetail />} />
           <Route path="attendance" element={<Attendance />} />
+          <Route path="employee-attendance" element={<EmployeeAttendance />} />
           <Route path="payroll" element={<Payroll />} />
           <Route path="salary-structures" element={<SalaryStructures />} />
           <Route path="payslips" element={<Payslips />} />

@@ -54,7 +54,7 @@ export const employeeApi = {
   getDetailed: (params) =>
     api.get(removeTrailingSlash('/employees/detailed'), { params }),
   getById: (id) => api.get(removeTrailingSlash(`/employees/${id}`)),
-  create: (data) => api.post(removeTrailingSlash('/employees'), data),
+  create: (data) => api.post('/employees/', data), // Keep trailing slash for POST to match backend
   update: (id, data) => api.put(removeTrailingSlash(`/employees/${id}`), data),
   delete: (id) => api.delete(removeTrailingSlash(`/employees/${id}`)),
 };
@@ -68,7 +68,8 @@ export const attendanceApi = {
     api.get(removeTrailingSlash(`/attendance/employee/${employeeId}`), {
       params,
     }),
-  create: (data) => api.post(removeTrailingSlash('/attendance'), data),
+  create: (data) => api.post(removeTrailingSlash('/attendance/'), data),
+  update: (id, data) => api.put(removeTrailingSlash(`/attendance/${id}/`), data),
 };
 
 // Payroll endpoints

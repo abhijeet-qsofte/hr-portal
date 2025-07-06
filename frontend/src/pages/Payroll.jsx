@@ -363,7 +363,7 @@ const Payroll = () => {
           >
             <SummaryContent>
               <SummaryIcon bgColor="rgba(0, 113, 227, 0.1)" iconColor="var(--color-primary)">
-                <FiDollarSign />
+                ₹
               </SummaryIcon>
               <SummaryInfo>
                 <h3>{formatCurrency(summary.totalAmount)}</h3>
@@ -380,7 +380,7 @@ const Payroll = () => {
           >
             <SummaryContent>
               <SummaryIcon bgColor="rgba(52, 199, 89, 0.1)" iconColor="var(--color-success)">
-                <FiDollarSign />
+                ₹
               </SummaryIcon>
               <SummaryInfo>
                 <h3>{formatCurrency(summary.averageSalary)}</h3>
@@ -397,7 +397,7 @@ const Payroll = () => {
           >
             <SummaryContent>
               <SummaryIcon bgColor="rgba(255, 149, 0, 0.1)" iconColor="var(--color-warning)">
-                <FiDollarSign />
+                ₹
               </SummaryIcon>
               <SummaryInfo>
                 <h3>{formatCurrency(summary.highestSalary)}</h3>

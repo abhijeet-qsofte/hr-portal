@@ -205,7 +205,7 @@ const Layout = () => {
             </NavItem>
             <NavItem>
               <StyledNavLink to="/payroll" onClick={closeSidebar}>
-                <FiDollarSign /> Payroll
+                <span style={{ fontSize: '1.25rem', marginRight: 'var(--spacing-md)', display: 'inline-flex', width: '1.25rem', justifyContent: 'center' }}>₹</span> Payroll
               </StyledNavLink>
             </NavItem>
             <NavItem>

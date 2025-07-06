@@ -158,7 +158,11 @@ const Dashboard = () => {
         
         // Fetch payroll data for current month
         const payrollResponse = await payrollApi.getAll();
-        const monthlyPayrollTotal = payrollResponse.data.reduce((sum, item) => sum + item.amount, 0);
+        const monthlyPayrollTotal = payrollResponse.data.reduce((sum, item) => {
+          // Check if the item has salary_total (from API) or amount (from mock data)
+          const amount = item.salary_total || item.amount || 0;
+          return sum + amount;
+        }, 0);
         
         setStats({
           totalEmployees: employeesResponse.data.length,
@@ -214,6 +218,10 @@ const Dashboard = () => {
   };
   
   const formatCurrency = (amount) => {
+    // Handle NaN, undefined, or null values
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '₹0';
+    }
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -301,7 +309,7 @@ const Dashboard = () => {
         >
           <StatContent>
             <StatIcon $bgColor="rgba(255, 149, 0, 0.1)" $iconColor="var(--color-warning)">
-              <FiDollarSign />
+              <span style={{ fontSize: '1.5rem' }}>₹</span>
             </StatIcon>
             <StatInfo>
               <h3>{formatCurrency(stats.monthlyPayroll)}</h3>

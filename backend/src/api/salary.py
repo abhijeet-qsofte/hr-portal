@@ -563,17 +563,25 @@ def generate_payslip(
     # Calculate leave days
     leave_days = working_days - days_present
     
-    # Calculate overtime hours (assuming 8 hours per day as standard)
-    regular_hours = days_present * 8
-    overtime_hours = max(0, total_hours - regular_hours)
+    # Calculate expected monthly hours based on working days in the month
+    standard_daily_hours = 8
+    expected_monthly_hours = working_days * standard_daily_hours
+    
+    # Calculate actual worked hours as a percentage of expected monthly hours
+    worked_percentage = min(1.0, total_hours / expected_monthly_hours) if expected_monthly_hours > 0 else 0
+    
+    # Only count overtime when total hours exceed the expected monthly hours
+    overtime_hours = max(0, total_hours - expected_monthly_hours)
     
     # Calculate overtime rate (1.5 times the hourly rate)
-    hourly_rate = salary_structure.basic_salary / (22 * 8)  # Assuming 22 working days and 8 hours per day
+    hourly_rate = salary_structure.basic_salary / (working_days * standard_daily_hours) if working_days > 0 else 0
     overtime_rate = hourly_rate * Decimal('1.5')
     overtime_amount = overtime_hours * overtime_rate
     
     # Calculate gross amount (prorated based on attendance)
-    attendance_factor = Decimal(days_present) / Decimal(working_days)
+    # Use the worked_percentage we calculated earlier instead of just days_present/working_days
+    # This accounts for actual hours worked rather than just days present
+    attendance_factor = Decimal(worked_percentage)
     gross_amount = salary_structure.gross_salary * attendance_factor + overtime_amount
     
     # Calculate deductions
