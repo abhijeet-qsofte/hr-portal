@@ -261,6 +261,12 @@ const Payslips = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all'); // all, pending, approved, paid
+  const [viewPayslip, setViewPayslip] = useState(null);
+  const [approvePayslip, setApprovePayslip] = useState(null);
+  const [payPayslip, setPayPayslip] = useState(null);
+  const [deletePayslip, setDeletePayslip] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
   const [filters, setFilters] = useState({
     month: format(new Date(), 'yyyy-MM'),
     employee_id: '',
@@ -271,6 +277,7 @@ const Payslips = () => {
   const [openApproveDialog, setOpenApproveDialog] = useState(false);
   const [openPayDialog, setOpenPayDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [currentPayslip, setCurrentPayslip] = useState(null);
   
   // Form states
@@ -421,6 +428,27 @@ const Payslips = () => {
   const handleOpenViewDialog = (payslip) => {
     setCurrentPayslip(payslip);
     setOpenViewDialog(true);
+  };
+
+  // Open delete dialog
+  const handleOpenDeleteDialog = (payslip) => {
+    setCurrentPayslip(payslip);
+    setOpenDeleteDialog(true);
+  };
+  
+  // Handle delete payslip
+  const handleDeletePayslip = async () => {
+    if (!currentPayslip) return;
+    
+    try {
+      await payslipApi.delete(currentPayslip.id);
+      setPayslips(payslips.filter(p => p.id !== currentPayslip.id));
+      setOpenDeleteDialog(false);
+      setCurrentPayslip(null);
+    } catch (error) {
+      console.error('Error deleting payslip:', error);
+      // You could add error handling here if needed
+    }
   };
 
   // Close view dialog
@@ -666,6 +694,15 @@ const Payslips = () => {
                 Download
               </Button>
             )}
+            <Button 
+              icon={<FiTrash2 />} 
+              variant="danger" 
+              size="sm" 
+              onClick={() => handleOpenDeleteDialog(row)}
+              aria-label="Delete"
+            >
+              Delete
+            </Button>
           </ActionButtons>
         );
       }
@@ -938,83 +975,108 @@ const Payslips = () => {
           <ModalContent>
             <ModalTitle>Payslip Details</ModalTitle>
             
-            <PayslipDetails>
-              <DetailRow>
-                <span>Employee:</span>
-                <span>{getEmployeeName(currentPayslip.employee_id)}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Month:</span>
-                <span>{formatMonth(currentPayslip.month)}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Working Days:</span>
-                <span>{currentPayslip.working_days}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Days Present:</span>
-                <span>{currentPayslip.days_present}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Leave Days:</span>
-                <span>{currentPayslip.leave_days}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Overtime Hours:</span>
-                <span>{currentPayslip.overtime_hours}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Overtime Rate:</span>
-                <span>{formatCurrency(currentPayslip.overtime_rate)}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Overtime Amount:</span>
-                <span>{formatCurrency(currentPayslip.overtime_amount)}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Bonus:</span>
-                <span>{formatCurrency(currentPayslip.bonus)}</span>
-              </DetailRow>
-              {currentPayslip.bonus_description && (
-                <DetailRow>
-                  <span>Bonus Description:</span>
-                  <span>{currentPayslip.bonus_description}</span>
-                </DetailRow>
+            <DetailGrid>
+              <DetailItem>
+                <DetailLabel>Employee</DetailLabel>
+                <DetailValue>{getEmployeeName(currentPayslip.employee_id)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Month</DetailLabel>
+                <DetailValue>{formatMonth(currentPayslip.month)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Basic Salary</DetailLabel>
+                <DetailValue>{formatCurrency(currentPayslip.basic_salary)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Gross Salary</DetailLabel>
+                <DetailValue>{formatCurrency(currentPayslip.gross_amount)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Net Salary</DetailLabel>
+                <DetailValue>{formatCurrency(currentPayslip.net_amount)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Days Present</DetailLabel>
+                <DetailValue>{currentPayslip.days_present || 0}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Total Hours</DetailLabel>
+                <DetailValue>{currentPayslip.total_hours || 0}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Overtime Hours</DetailLabel>
+                <DetailValue>{currentPayslip.overtime_hours || 0}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Overtime Amount</DetailLabel>
+                <DetailValue>{formatCurrency(currentPayslip.overtime_amount)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Allowances</DetailLabel>
+                <DetailValue>{formatCurrency(currentPayslip.allowances)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Deductions</DetailLabel>
+                <DetailValue>{formatCurrency(currentPayslip.deductions)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Tax</DetailLabel>
+                <DetailValue>{formatCurrency(currentPayslip.tax)}</DetailValue>
+              </DetailItem>
+              <DetailItem>
+                <DetailLabel>Status</DetailLabel>
+                <DetailValue>
+                  {currentPayslip.is_paid ? 'Paid' : currentPayslip.is_approved ? 'Approved' : 'Pending'}
+                </DetailValue>
+              </DetailItem>
+              {currentPayslip.is_approved && (
+                <DetailItem>
+                  <DetailLabel>Approved By</DetailLabel>
+                  <DetailValue>{getEmployeeName(currentPayslip.approved_by)}</DetailValue>
+                </DetailItem>
               )}
-              <DetailRow>
-                <span>Additional Deductions:</span>
-                <span>{formatCurrency(currentPayslip.additional_deductions)}</span>
-              </DetailRow>
-              {currentPayslip.deduction_description && (
-                <DetailRow>
-                  <span>Deduction Description:</span>
-                  <span>{currentPayslip.deduction_description}</span>
-                </DetailRow>
+              {currentPayslip.is_approved && (
+                <DetailItem>
+                  <DetailLabel>Approval Date</DetailLabel>
+                  <DetailValue>{formatDate(currentPayslip.approval_date)}</DetailValue>
+                </DetailItem>
               )}
-              <DetailRow>
-                <span>Gross Amount:</span>
-                <span>{formatCurrency(currentPayslip.gross_amount)}</span>
-              </DetailRow>
-              <DetailRow>
-                <span>Total Deductions:</span>
-                <span>{formatCurrency(currentPayslip.total_deductions)}</span>
-              </DetailRow>
-              <TotalRow>
-                <span>Net Amount:</span>
-                <span>{formatCurrency(currentPayslip.net_amount)}</span>
-              </TotalRow>
-            </PayslipDetails>
-
+              {currentPayslip.is_paid && (
+                <DetailItem>
+                  <DetailLabel>Payment Date</DetailLabel>
+                  <DetailValue>{formatDate(currentPayslip.payment_date)}</DetailValue>
+                </DetailItem>
+              )}
+              {currentPayslip.is_paid && currentPayslip.payment_reference && (
+                <DetailItem>
+                  <DetailLabel>Payment Reference</DetailLabel>
+                  <DetailValue>{currentPayslip.payment_reference}</DetailValue>
+                </DetailItem>
+              )}
+            </DetailGrid>
             <ModalActions>
               <Button variant="secondary" onClick={handleCloseViewDialog}>Close</Button>
               {(currentPayslip.is_approved || currentPayslip.is_paid) && (
-                <Button 
-                  icon={<FiDownload />}
-                  onClick={() => handleDownloadPayslip(currentPayslip)}
-                >
-                  Download PDF
-                </Button>
+                <Button variant="primary" onClick={() => handleDownloadPayslip(currentPayslip)}>Download PDF</Button>
               )}
+            </ModalActions>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {openDeleteDialog && currentPayslip && (
+        <Modal isOpen={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+          <ModalContent>
+            <ModalTitle>Confirm Delete</ModalTitle>
+            <p>
+              Are you sure you want to delete the payslip for {getEmployeeName(currentPayslip.employee_id)} for {formatMonth(currentPayslip.month)}?
+              This action cannot be undone.
+            </p>
+            <ModalActions>
+              <Button variant="secondary" onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
+              <Button variant="danger" onClick={handleDeletePayslip}>Delete</Button>
             </ModalActions>
           </ModalContent>
         </Modal>

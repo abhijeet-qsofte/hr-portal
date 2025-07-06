@@ -350,16 +350,45 @@ const SalaryStructures = () => {
     setConfirmDelete(null);
   };
 
+  // State for error message and force delete confirmation
+  const [deleteError, setDeleteError] = useState(null);
+  const [showForceDelete, setShowForceDelete] = useState(false);
+
   // Delete salary structure
   const handleDelete = async () => {
     if (!confirmDelete) return;
     
     try {
+      setDeleteError(null);
       await salaryStructureApi.delete(confirmDelete.id);
       setStructures(structures.filter(s => s.id !== confirmDelete.id));
       setConfirmDelete(null);
+      setShowForceDelete(false);
     } catch (error) {
       console.error('Error deleting salary structure:', error);
+      if (error.response && error.response.status === 400 && 
+          error.response.data.detail.includes('payslips are using this structure')) {
+        setDeleteError(error.response.data.detail);
+        setShowForceDelete(true);
+      } else {
+        setDeleteError('An error occurred while deleting the salary structure.');
+      }
+    }
+  };
+  
+  // Force delete salary structure and its dependent payslips
+  const handleForceDelete = async () => {
+    if (!confirmDelete) return;
+    
+    try {
+      setDeleteError(null);
+      await salaryStructureApi.forceDelete(confirmDelete.id);
+      setStructures(structures.filter(s => s.id !== confirmDelete.id));
+      setConfirmDelete(null);
+      setShowForceDelete(false);
+    } catch (error) {
+      console.error('Error force deleting salary structure:', error);
+      setDeleteError('An error occurred while force deleting the salary structure and its payslips.');
     }
   };
 
@@ -693,9 +722,27 @@ const SalaryStructures = () => {
               Are you sure you want to delete the salary structure for {getEmployeeName(confirmDelete.employee_id)}?
               This action cannot be undone.
             </p>
+            
+            {deleteError && (
+              <div style={{ marginTop: 'var(--spacing-md)', padding: 'var(--spacing-sm)', backgroundColor: 'var(--color-danger-light)', borderRadius: 'var(--border-radius-sm)' }}>
+                <p style={{ color: 'var(--color-danger)', margin: 0 }}>{deleteError}</p>
+                
+                {showForceDelete && (
+                  <div style={{ marginTop: 'var(--spacing-sm)' }}>
+                    <p style={{ fontWeight: 'bold' }}>Would you like to delete this salary structure AND all its dependent payslips?</p>
+                    <p><strong>Warning:</strong> This will permanently delete all payslips associated with this salary structure.</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <ModalActions>
               <Button variant="secondary" onClick={handleCancelDelete}>Cancel</Button>
-              <Button variant="danger" onClick={handleDelete}>Delete</Button>
+              {showForceDelete ? (
+                <Button variant="danger" onClick={handleForceDelete}>Force Delete with Payslips</Button>
+              ) : (
+                <Button variant="danger" onClick={handleDelete}>Delete</Button>
+              )}
             </ModalActions>
           </ModalContent>
         </Modal>

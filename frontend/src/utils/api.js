@@ -92,6 +92,7 @@ export const salaryStructureApi = {
   update: (id, data) =>
     api.put(removeTrailingSlash(`/salary/structures/${id}`), data),
   delete: (id) => api.delete(removeTrailingSlash(`/salary/structures/${id}`)),
+  forceDelete: (id) => api.delete(removeTrailingSlash(`/salary/structures/${id}/force-delete`)),
 };
 
 // Payslip endpoints

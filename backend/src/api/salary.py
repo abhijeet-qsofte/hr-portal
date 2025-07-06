@@ -212,6 +212,15 @@ def delete_salary_structure(structure_id: int, db: Session = Depends(get_db)):
     """
     Delete a salary structure
     """
+    # First check if there are any payslips using this salary structure
+    dependent_payslips = db.query(Payslip).filter(Payslip.salary_structure_id == structure_id).count()
+    if dependent_payslips > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot delete salary structure: {dependent_payslips} payslips are using this structure. "
+                   f"You must reassign or delete these payslips first or use the /structures/{structure_id}/force-delete endpoint."
+        )
+    
     db_structure = db.query(SalaryStructure).filter(SalaryStructure.id == structure_id).first()
     if not db_structure:
         raise HTTPException(status_code=404, detail="Salary structure not found")
@@ -220,6 +229,33 @@ def delete_salary_structure(structure_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return None
+
+@router.delete("/structures/{structure_id}/force-delete", status_code=status.HTTP_204_NO_CONTENT)
+def force_delete_salary_structure(structure_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a salary structure and all its dependent payslips
+    """
+    # First check if the salary structure exists
+    db_structure = db.query(SalaryStructure).filter(SalaryStructure.id == structure_id).first()
+    if not db_structure:
+        raise HTTPException(status_code=404, detail="Salary structure not found")
+    
+    # Find all dependent payslips
+    dependent_payslips = db.query(Payslip).filter(Payslip.salary_structure_id == structure_id).all()
+    payslip_count = len(dependent_payslips)
+    
+    # Delete all dependent payslips
+    for payslip in dependent_payslips:
+        db.delete(payslip)
+    
+    # Delete the salary structure
+    db.delete(db_structure)
+    
+    # Commit all changes in a single transaction
+    db.commit()
+    
+    # Return success message with count of deleted items
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 # Payslip endpoints
 @router.get("/payslips", response_model=List[PayslipWithEmployee])
