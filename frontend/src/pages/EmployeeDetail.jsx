@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FiUser, FiMail, FiPhone, FiCalendar, FiBriefcase, 
   FiMapPin, FiDollarSign, FiClock, FiEdit2, FiTrash2,
-  FiArrowLeft, FiCheckCircle, FiXCircle
+  FiArrowLeft, FiCheckCircle, FiXCircle, FiPlus
 } from 'react-icons/fi';
 
 import Card from '../components/Card';
@@ -13,7 +13,7 @@ import Button from '../components/Button';
 import Table from '../components/Table';
 import Modal from '../components/Modal';
 import EditEmployeeForm from '../components/EditEmployeeForm';
-import { employeeApi, attendanceApi, payrollApi } from '../utils/api';
+import { employeeApi, attendanceApi, payrollApi, salaryStructureApi } from '../utils/api';
 import { format, parseISO } from 'date-fns';
 
 const PageContainer = styled.div`
@@ -233,6 +233,7 @@ const EmployeeDetail = () => {
   const [activeTab, setActiveTab] = useState('info');
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [payrollRecords, setPayrollRecords] = useState([]);
+  const [salaryStructure, setSalaryStructure] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   useEffect(() => {
@@ -244,6 +245,8 @@ const EmployeeDetail = () => {
       fetchAttendanceRecords();
     } else if (activeTab === 'payroll') {
       fetchPayrollRecords();
+    } else if (activeTab === 'salary') {
+      fetchSalaryStructure();
     }
   }, [activeTab]);
   
@@ -274,7 +277,7 @@ const EmployeeDetail = () => {
   
   const fetchAttendanceRecords = async () => {
     try {
-      const response = await attendanceApi.getByEmployeeId(id);
+      const response = await attendanceApi.getByEmployee(id);
       setAttendanceRecords(response.data);
     } catch (error) {
       console.error('Error fetching attendance records:', error);
@@ -291,7 +294,7 @@ const EmployeeDetail = () => {
   
   const fetchPayrollRecords = async () => {
     try {
-      const response = await payrollApi.getByEmployeeId(id);
+      const response = await payrollApi.getByEmployee(id);
       setPayrollRecords(response.data);
     } catch (error) {
       console.error('Error fetching payroll records:', error);
@@ -319,16 +322,25 @@ const EmployeeDetail = () => {
     await fetchEmployeeData();
   };
   
+  const fetchSalaryStructure = async () => {
+    try {
+      const response = await salaryStructureApi.getByEmployee(employee.id);
+      // Get the most recent salary structure (should be the first one if sorted by effective_from)
+      if (response.data && response.data.length > 0) {
+        setSalaryStructure(response.data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching salary structure:', error);
+    }
+  };
+
   const handleDeleteEmployee = async () => {
-    if (window.confirm('Are you sure you want to delete this employee?')) {
+    if (window.confirm(`Are you sure you want to delete ${employee.name}?`)) {
       try {
-        console.log('Deleting employee:', employee.id);
         await employeeApi.delete(employee.id);
-        // Navigate back to employees list after successful deletion
         navigate('/employees');
       } catch (error) {
         console.error('Error deleting employee:', error);
-        alert('Failed to delete employee. Please try again.');
       }
     }
   };
@@ -517,6 +529,12 @@ const EmployeeDetail = () => {
           >
             Payroll History
           </Tab>
+          <Tab 
+            active={activeTab === 'salary'} 
+            onClick={() => setActiveTab('salary')}
+          >
+            Salary Structure
+          </Tab>
         </TabsContainer>
         
         {activeTab === 'info' && (
@@ -644,6 +662,162 @@ const EmployeeDetail = () => {
                 emptyMessage="No payroll records found"
               />
             </Card>
+          </motion.div>
+        )}
+        
+        {activeTab === 'salary' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {salaryStructure ? (
+              <Card>
+                <Card.Header>
+                  <h3>Current Salary Structure</h3>
+                  <p>Effective from: {formatDate(salaryStructure.effective_from)}</p>
+                </Card.Header>
+                <Card.Body>
+                  <InfoGrid>
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Basic Salary</div>
+                        <div className="value">{formatCurrency(salaryStructure.basic_salary)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">House Rent Allowance</div>
+                        <div className="value">{formatCurrency(salaryStructure.house_rent_allowance)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Medical Allowance</div>
+                        <div className="value">{formatCurrency(salaryStructure.medical_allowance)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Transport Allowance</div>
+                        <div className="value">{formatCurrency(salaryStructure.transport_allowance)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Special Allowance</div>
+                        <div className="value">{formatCurrency(salaryStructure.special_allowance)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Gross Salary</div>
+                        <div className="value">{formatCurrency(salaryStructure.gross_salary)}</div>
+                      </div>
+                    </InfoItem>
+                  </InfoGrid>
+                  
+                  <h4 style={{ marginTop: 'var(--spacing-lg)', marginBottom: 'var(--spacing-md)' }}>Deductions</h4>
+                  
+                  <InfoGrid>
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Tax Deduction</div>
+                        <div className="value">{formatCurrency(salaryStructure.tax_deduction)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Provident Fund</div>
+                        <div className="value">{formatCurrency(salaryStructure.provident_fund)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Insurance</div>
+                        <div className="value">{formatCurrency(salaryStructure.insurance)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Other Deductions</div>
+                        <div className="value">{formatCurrency(salaryStructure.other_deductions)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Total Deductions</div>
+                        <div className="value">{formatCurrency(salaryStructure.tax_deduction + salaryStructure.provident_fund + salaryStructure.insurance + salaryStructure.other_deductions)}</div>
+                      </div>
+                    </InfoItem>
+                    
+                    <InfoItem>
+                      <div className="icon">
+                        <FiDollarSign />
+                      </div>
+                      <div className="content">
+                        <div className="label">Net Salary</div>
+                        <div className="value">{formatCurrency(salaryStructure.net_salary)}</div>
+                      </div>
+                    </InfoItem>
+                  </InfoGrid>
+                </Card.Body>
+              </Card>
+            ) : (
+              <Card>
+                <Card.Body>
+                  <p>No salary structure found for this employee.</p>
+                  <Button 
+                    onClick={() => navigate(`/salary-structures?employee=${employee.id}`)}
+                    style={{ marginTop: 'var(--spacing-md)' }}
+                  >
+                    <FiPlus /> Create Salary Structure
+                  </Button>
+                </Card.Body>
+              </Card>
+            )}
           </motion.div>
         )}
       </motion.div>
