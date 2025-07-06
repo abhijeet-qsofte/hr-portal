@@ -328,9 +328,9 @@ const Layout = () => {
   
   // Get user initials for avatar
   const getUserInitials = () => {
-    if (!user || !user.full_name) return 'U';
+    if (!user || !user.fullName) return 'U';
     
-    const names = user.full_name.split(' ');
+    const names = user.fullName.split(' ');
     if (names.length >= 2) {
       return `${names[0][0]}${names[1][0]}`.toUpperCase();
     }
@@ -464,7 +464,7 @@ const Layout = () => {
             <UserButton onClick={toggleUserMenu}>
               <div className="user-avatar">{getUserInitials()}</div>
               <div className="user-info">
-                <div className="name">{user?.full_name || 'User'}</div>
+                <div className="name">{user?.fullName || 'User'}</div>
                 <div className="role">{getUserRole()}</div>
               </div>
             </UserButton>

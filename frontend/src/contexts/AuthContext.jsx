@@ -126,18 +126,37 @@ export const AuthProvider = ({ children }) => {
       // Use the authApi utility for login
       const response = await authApi.login(email, password);
       
-      // Extract token and user data
-      const { access_token, refresh_token, user } = response.data;
+      // Extract token and user data from response
+      const { 
+        access_token, 
+        refresh_token, 
+        user_id, 
+        email: userEmail, 
+        full_name, 
+        roles 
+      } = response.data;
+      
+      console.log('Raw login response:', response.data);
+      
+      // Create a user object from the response data
+      const userData = {
+        id: user_id,
+        email: userEmail,
+        fullName: full_name,
+        roles: Array.isArray(roles) ? roles : []
+      };
+      
+      console.log('User data after login:', userData);
       
       // Store tokens and user data
       localStorage.setItem('authToken', access_token);
       localStorage.setItem('refreshToken', refresh_token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(userData));
       
       // Set state
       setToken(access_token);
       setRefreshToken(refresh_token);
-      setUser(user);
+      setUser(userData);
       
       // Set the default Authorization header for all axios requests
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
@@ -145,7 +164,7 @@ export const AuthProvider = ({ children }) => {
       // Setup token refresh
       setupTokenRefresh(access_token, refresh_token);
       
-      return user;
+      return userData;
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to login');
       throw err;
@@ -178,12 +197,22 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user has a specific role
   const hasRole = (requiredRoles) => {
-    if (!user || !user.roles) return false;
+    // If no user or roles, return false
+    if (!user || !user.roles || !Array.isArray(user.roles)) {
+      return false;
+    }
     
+    // For admin users, always return true (admin has all permissions)
+    if (user.roles.includes('admin')) {
+      return true;
+    }
+    
+    // Check if user has any of the required roles
     if (Array.isArray(requiredRoles)) {
       return requiredRoles.some(role => user.roles.includes(role));
     }
     
+    // Check for a single required role
     return user.roles.includes(requiredRoles);
   };
 
