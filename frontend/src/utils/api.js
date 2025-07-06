@@ -16,13 +16,19 @@ const api = axios.create({
   maxRedirects: 5,
 });
 
-// Add request interceptor for debugging
+// Add request interceptor for authentication and debugging
 api.interceptors.request.use((request) => {
+  // Add auth token if available
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    request.headers.Authorization = `Bearer ${token}`;
+  }
+  
   console.log('API Request:', request.method.toUpperCase(), request.url);
   return request;
 });
 
-// Add response interceptor for debugging
+// Add response interceptor for authentication errors and debugging
 api.interceptors.response.use(
   (response) => {
     console.log(
@@ -34,6 +40,18 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Handle authentication errors
+    if (error.response && error.response.status === 401) {
+      // Clear token and redirect to login if unauthorized
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    
     console.error(
       'API Error:',
       error.response?.status || error.message,
@@ -128,6 +146,58 @@ export const payslipApi = {
         Accept: 'application/pdf',
       },
     }),
+};
+
+// Authentication endpoints
+export const authApi = {
+  login(email, password) {
+    // For login, we need to use x-www-form-urlencoded format as required by OAuth2
+    const formData = new URLSearchParams();
+    formData.append('username', email);
+    formData.append('password', password);
+    
+    return api.post(removeTrailingSlash('/auth/login'), formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  },
+  
+  refreshToken(refreshToken) {
+    return api.post(removeTrailingSlash('/auth/refresh'), { refresh_token: refreshToken });
+  },
+  
+  forgotPassword(email) {
+    return api.post(removeTrailingSlash('/auth/forgot-password'), { email });
+  },
+  
+  resetPassword(token, new_password) {
+    return api.post(removeTrailingSlash('/auth/reset-password'), { token, new_password });
+  },
+  
+  register(userData) {
+    return api.post(removeTrailingSlash('/auth/register'), userData);
+  },
+  
+  getCurrentUser() {
+    return api.get(removeTrailingSlash('/auth/me'));
+  },
+  
+  updateCurrentUser(userData) {
+    return api.put(removeTrailingSlash('/auth/me'), userData);
+  },
+  
+  getAllUsers() {
+    return api.get(removeTrailingSlash('/auth/users'));
+  },
+  
+  assignRole(userId, roleName) {
+    return api.post(removeTrailingSlash(`/auth/users/${userId}/roles/${roleName}`));
+  },
+  
+  removeRole(userId, roleName) {
+    return api.delete(removeTrailingSlash(`/auth/users/${userId}/roles/${roleName}`));
+  }
 };
 
 export default api;

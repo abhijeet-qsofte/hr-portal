@@ -4,7 +4,6 @@ from src.db.base_class import Base
 
 class SalaryStructure(Base):
     __tablename__ = "salary_structures"
-    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     employee_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
@@ -66,7 +65,6 @@ class SalaryStructure(Base):
 
 class Payslip(Base):
     __tablename__ = "payslips"
-    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     employee_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
@@ -128,4 +126,5 @@ class Payslip(Base):
         CheckConstraint('leave_days >= 0 AND leave_days <= 31', name='valid_leave_days_payslip'),
         CheckConstraint('gross_amount >= 0', name='valid_gross_amount_payslip'),
         CheckConstraint('net_amount >= 0', name='valid_net_amount_payslip'),
+        {'extend_existing': True}
     )

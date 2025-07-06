@@ -18,13 +18,7 @@ class BaseSingleton:
             # Create Base class with extend_existing=True
             cls._instance = declarative_base(metadata=metadata)
             
-            # Configure all tables to use extend_existing=True by default
-            @classmethod
-            def __table_args__(cls):
-                return {'extend_existing': True}
-            
-            # Attach the method to Base
-            cls._instance.__table_args__ = __table_args__
+            # Base configuration is complete
         
         return cls._instance
 

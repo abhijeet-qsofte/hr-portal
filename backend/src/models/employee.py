@@ -4,7 +4,6 @@ from src.db.base_class import Base
 
 class Employee(Base):
     __tablename__ = "employees"
-    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
@@ -23,6 +22,7 @@ class Employee(Base):
     __table_args__ = (
         CheckConstraint("status IN ('active', 'inactive', 'terminated')", name="valid_status"),
         CheckConstraint("doj <= CURRENT_DATE", name="valid_doj"),
+        {'extend_existing': True}
     )
     
     # Relationships
@@ -36,3 +36,6 @@ class Employee(Base):
     created_salary_structures = relationship("SalaryStructure", foreign_keys="SalaryStructure.created_by", backref="creator")
     processed_payslips = relationship("Payslip", foreign_keys="Payslip.processed_by", backref="processor")
     approved_payslips = relationship("Payslip", foreign_keys="Payslip.approved_by", backref="approver")
+    
+    # User relationship for authentication
+    user = relationship("User", back_populates="employee", uselist=False)

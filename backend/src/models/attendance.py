@@ -15,7 +15,6 @@ def compile_total_hours(element, compiler, **kw):
 
 class Attendance(Base):
     __tablename__ = "attendance"
-    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     employee_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
@@ -33,7 +32,8 @@ class Attendance(Base):
     __table_args__ = (
         UniqueConstraint('employee_id', 'date', name='unique_employee_date'),
         CheckConstraint('date <= CURRENT_DATE', name='valid_date'),
-        CheckConstraint('end_time IS NULL OR end_time > start_time', name='valid_time_order')
+        CheckConstraint('end_time IS NULL OR end_time > start_time', name='valid_time_order'),
+        {'extend_existing': True}
     )
     
     # Relationship

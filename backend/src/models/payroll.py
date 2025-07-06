@@ -4,7 +4,6 @@ from src.db.base_class import Base
 
 class Payroll(Base):
     __tablename__ = "payroll"
-    __table_args__ = {'extend_existing': True}
     
     id = Column(Integer, primary_key=True, index=True)
     employee_id = Column(Integer, ForeignKey("employees.id", ondelete="CASCADE"), nullable=False)
@@ -29,7 +28,8 @@ class Payroll(Base):
         UniqueConstraint('employee_id', 'month', name='unique_employee_month'),
         CheckConstraint("month ~ '^\\d{4}-\\d{2}$'", name='valid_month'),
         CheckConstraint('days_present >= 0 AND days_present <= 31', name='valid_days_present'),
-        CheckConstraint('salary_total >= 0', name='valid_salary')
+        CheckConstraint('salary_total >= 0', name='valid_salary'),
+        {'extend_existing': True}
     )
     
     # Relationships

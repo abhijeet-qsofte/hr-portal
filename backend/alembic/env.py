@@ -54,6 +54,8 @@ from src.db.base import Base
 from src.models.employee import Employee
 from src.models.attendance import Attendance
 from src.models.payroll import Payroll
+from src.models.auth import User, Role, Permission
+from src.models.salary import SalaryStructure, Payslip
 
 target_metadata = Base.metadata
 

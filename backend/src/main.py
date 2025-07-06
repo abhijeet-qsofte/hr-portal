@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.staticfiles import StaticFiles
@@ -7,6 +7,7 @@ import uvicorn
 import sys
 import os
 from starlette.middleware.base import BaseHTTPMiddleware
+from sqlalchemy.orm import Session
 
 # Add the current directory to the path so we can import modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -15,7 +16,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import db_setup
 
 # Now import API routes
-from api import employees, attendance, payroll, salary
+from api import employees, attendance, payroll, salary, auth, examples
+from db.session import get_db
+from auth.init_db import init_db
 
 # Create FastAPI app with redirect_slashes=False to enforce no-trailing-slash URLs
 app = FastAPI(
@@ -61,13 +64,14 @@ app.include_router(employees.router, prefix="/employees", tags=["Employees"])
 app.include_router(attendance.router, prefix="/attendance", tags=["Attendance"])
 app.include_router(payroll.router, prefix="/payroll", tags=["Payroll"])
 app.include_router(salary.router, prefix="/salary", tags=["Salary Management"])
-
-# Import init_db for startup event
-from src.db.init_db import init_db
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(examples.router)  # Examples router already has prefix and tags
 
 @app.on_event("startup")
-async def startup_event():
-    await init_db()
+def startup_event():
+    # Initialize database with default roles and admin user
+    db = next(get_db())
+    init_db(db)
 
 @app.get("/", tags=["Root"])
 async def root():
